@@ -4,11 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'QQMusic-v0.3.1-GitHub-ready-source.zip'
+      - '.github/workflows/android.yml'
+      - 'QQMusic-v0.3.1-GitHub-ready-source*.zip'
+      - 'source/**'
       - 'app/**'
-      - 'build.gradle.kts'
-      - 'settings.gradle.kts'
-      - 'gradle.properties'
+      - '*.gradle.kts'
 permissions:
   contents: read
 jobs:
@@ -17,11 +17,18 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-      - name: Extract uploaded source ZIP if present
+      - name: Restore Android source
         shell: bash
         run: |
-          if [ -f QQMusic-v0.3.1-GitHub-ready-source.zip ]; then
-            unzip -oq QQMusic-v0.3.1-GitHub-ready-source.zip -d .
+          set -euo pipefail
+          shopt -s nullglob
+          archives=(QQMusic-v0.3.1-GitHub-ready-source*.zip)
+          if [ -f source/qqmusic-v0.3.1.tar.br.b64 ]; then
+            echo "Restoring committed compressed source"
+            base64 -d source/qqmusic-v0.3.1.tar.br.b64 | python3 -c 'import sys,brotli,tarfile,io; t=tarfile.open(fileobj=io.BytesIO(brotli.decompress(sys.stdin.buffer.read()))); t.extractall(".")'
+          elif [ "${#archives[@]}" -gt 0 ]; then
+            echo "Extracting ${archives[0]}"
+            unzip -oq "${archives[0]}" -d .
           fi
           test -f settings.gradle.kts
           test -f build.gradle.kts
@@ -36,11 +43,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-      - name: Install Android 36 SDK
+      - name: Install Android SDK
         run: sdkmanager --install 'platforms;android-36' 'build-tools;35.0.0'
-      - name: Test and build APK
+      - name: Test and build debug APK
         run: gradle --no-daemon --stacktrace :app:testDebugUnitTest :app:assembleDebug
-      - name: Upload installable APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: QQMusic-v0.3.1-debug-APK
