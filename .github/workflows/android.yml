@@ -1,26 +1,31 @@
-name: Android APK
+name: QQMusic Android APK
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
+      - 'QQMusic-v0.3.1-GitHub-ready-source.zip'
       - 'app/**'
-      - '*.gradle.kts'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
       - 'gradle.properties'
-      - '.github/workflows/android.yml'
 permissions:
   contents: read
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-      - name: Check source completeness
+      - name: Extract uploaded source ZIP if present
         shell: bash
         run: |
-          test -f app/build.gradle.kts
+          if [ -f QQMusic-v0.3.1-GitHub-ready-source.zip ]; then
+            unzip -oq QQMusic-v0.3.1-GitHub-ready-source.zip -d .
+          fi
           test -f settings.gradle.kts
+          test -f build.gradle.kts
+          test -f app/build.gradle.kts
           test -f app/src/main/AndroidManifest.xml
           test -f app/src/main/java/com/shuocao/qqmusic/MainActivity.kt
       - uses: actions/setup-java@v4
@@ -31,10 +36,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-      - name: Build debug APK
+      - name: Install Android 36 SDK
+        run: sdkmanager --install 'platforms;android-36' 'build-tools;35.0.0'
+      - name: Test and build APK
         run: gradle --no-daemon --stacktrace :app:testDebugUnitTest :app:assembleDebug
-      - uses: actions/upload-artifact@v4
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
         with:
-          name: QQMusic-debug-APK
+          name: QQMusic-v0.3.1-debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
