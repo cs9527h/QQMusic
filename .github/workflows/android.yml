@@ -32,6 +32,12 @@ jobs:
           test -f app/build.gradle.kts
           test -f app/src/main/AndroidManifest.xml
           test -f app/src/main/java/com/shuocao/qqmusic/MainActivity.kt
+          # The archived prototype used 2026 dependencies requiring SDK 37 / AGP 9.1.
+          # Pin compatible AndroidX versions until the source archive is replaced.
+          sed -i 's/compose-bom:2026.09.00/compose-bom:2025.06.01/g' app/build.gradle.kts
+          sed -i 's/activity-compose:1.13.0/activity-compose:1.10.1/g' app/build.gradle.kts
+          sed -i 's/lifecycle-runtime-ktx:2.11.0/lifecycle-runtime-ktx:2.9.2/g' app/build.gradle.kts
+          sed -i 's/media3-exoplayer:1.11.1/media3-exoplayer:1.8.0/g; s/media3-session:1.11.1/media3-session:1.8.0/g' app/build.gradle.kts
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
